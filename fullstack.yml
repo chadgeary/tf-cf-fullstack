@@ -400,7 +400,10 @@ Resources:
             dnf -y update
 
             # install ansible and ssm
-            dnf install -y ansible https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+            dnf install -y python3-pip https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+
+            # ansible via pip3
+            pip3 install --user ansible
 
             # start/enable ssm
             systemctl enable amazon-ssm-agent
