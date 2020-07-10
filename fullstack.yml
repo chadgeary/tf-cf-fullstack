@@ -351,7 +351,7 @@ Resources:
               response = boto3.client('ec2').describe_images(
                 Owners=[event['ResourceProperties']['Owner']],
                 Filters=[
-                  {'Name': 'product-code', 'Values': [event['ResourceProperties']['ProductCode']]},
+                  {'Name': 'name', 'Values': [event['ResourceProperties']['Name']]},
                   {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
                   {'Name': 'root-device-type', 'Values': ['ebs']}
                 ],
@@ -371,8 +371,8 @@ Resources:
     Type: Custom::LatestAMI
     Properties:
       ServiceToken: !Sub ${EC2DescribeImagesLambda.Arn}
-      Owner: "aws-marketplace"
-      ProductCode: "aw0evgkw8e5c1q413zgy5pjce"
+      Owner: "125523088429"
+      Name: "CentOS 8*"
       Architecture: "x86_64"
 
   EC2InstanceManaged:
