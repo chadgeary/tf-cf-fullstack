@@ -1,0 +1,425 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Fullstack with Network and Compute Components
+
+Resources:
+  FullstackVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.100.0.0/16
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: fullstack-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: fullstack-gw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref FullstackVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  ManagedSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref FullstackVPC
+      CidrBlock: 10.100.0.0/24
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: fullstack-mannet1
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref FullstackVPC
+      CidrBlock: 10.100.1.0/24
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: fullstack-pubnet1
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref FullstackVPC
+      CidrBlock: 10.100.2.0/24
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: fullstack-prinet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref FullstackVPC
+      CidrBlock: 10.100.3.0/24
+      AvailabilityZone: !Select 
+        - '1'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: fullstack-pubnet2
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref FullstackVPC
+      CidrBlock: 10.100.4.0/24
+      AvailabilityZone: !Select 
+        - '1'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: fullstack-prinet2
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref FullstackVPC
+      Tags:
+        - Key: Name
+          Value: fullstack-pubrt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  ManagedSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ManagedSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref FullstackVPC
+      Tags:
+      - Key: Name
+        Value: fullstack-prirt
+
+  PrivateSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: fullstack-pubsg
+      GroupName: fullstack-pubsg
+      SecurityGroupEgress:
+        -
+          IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        -
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        -
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: fullstack-pubsg
+      VpcId: !Ref FullstackVPC
+
+  ManagedSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: fullstack-mansg
+      GroupName: fullstack-mansg
+      SecurityGroupEgress:
+        -
+          IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        -
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: fullstack-mansg
+      VpcId: !Ref FullstackVPC
+
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: fullstack-prisg
+      GroupName: fullstack-prisg
+      SecurityGroupEgress:
+        -
+          IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        -
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref PublicSecurityGroup
+        -
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref PublicSecurityGroup
+        -
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref ManagedSecurityGroup
+      Tags:
+        - Key: Name
+          Value: fullstack-prisg
+      VpcId: !Ref FullstackVPC
+
+  PublicELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      CrossZone: 'true'
+      ConnectionDrainingPolicy:
+        Enabled: 'true'
+        Timeout: '60'
+      Listeners:
+        - InstancePort: 80
+          InstanceProtocol: tcp
+          LoadBalancerPort: 80
+          Protocol: tcp
+        - InstancePort: 443
+          InstanceProtocol: tcp
+          LoadBalancerPort: 443
+          Protocol: tcp
+      HealthCheck:
+        HealthyThreshold: 3
+        Interval: 90
+        Target: TCP:443
+        Timeout: 60
+        UnhealthyThreshold: 3
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref PublicSecurityGroup
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: fullstack-pubelb
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: Name
+          Value: fullstack-s3
+
+  EC2IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: "Allow"
+          Principal:
+            Service:
+              - "ec2.amazonaws.com"
+          Action:
+            - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      RoleName: fullstack-ec2iamrole
+      Description: EC2 IAM Role with SSM
+      Path: "/"
+      Policies:
+        - PolicyName: DescribeImages
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  - cloudwatch:PutMetricData
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - s3:HeadBucket
+                  - s3:ListAllMyBuckets
+              - Effect: Allow
+                Resource:
+                  - !GetAtt S3Bucket.Arn
+                  - !Join [ "/" , [ !GetAtt S3Bucket.Arn, "*" ] ]
+                Action:
+                  - s3:Get
+                  - s3:GetBucketTagging
+                  - s3:GetLifecycleConfiguration
+                  - s3:ListBucket
+                  - s3:ListMultipartUploadParts
+                  - s3:Put
+
+  EC2InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    DependsOn: EC2IAMRole
+    Properties:
+      InstanceProfileName: fullstack-instanceprofile
+      Path: "/"
+      Roles:
+        - !Ref EC2IAMRole
+
+  EC2DescribeImagesRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: DescribeImages
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: ec2:DescribeImages
+                Effect: Allow
+                Resource: "*"
+
+  EC2DescribeImagesLambda:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Runtime: python3.6
+      Handler: index.handler
+      Role: !Sub ${EC2DescribeImagesRole.Arn}
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import sys
+
+          def handler(event, context):
+            try:
+              response = boto3.client('ec2').describe_images(
+                Owners=[event['ResourceProperties']['Owner']],
+                Filters=[
+                  {'Name': 'product-code', 'Values': [event['ResourceProperties']['ProductCode']]},
+                  {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
+                  {'Name': 'root-device-type', 'Values': ['ebs']}
+                ],
+              )
+
+              amis = sorted(response['Images'],
+                     key=lambda x: x['CreationDate'],
+                     reverse=True)
+              id = amis[0]['ImageId']
+
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, id)
+            except:
+              print(sys.last_value)
+              cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+
+  EC2CentOSAmi:
+    Type: Custom::LatestAMI
+    Properties:
+      ServiceToken: !Sub ${EC2DescribeImagesLambda.Arn}
+      Owner: "aws-marketplace"
+      ProductCode: "aw0evgkw8e5c1q413zgy5pjce"
+      Architecture: "x86_64"
+
+  EC2InstanceManaged:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      EbsOptimized: "true"
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      ImageId: !Ref EC2CentOSAmi
+      InstanceType: t3a.micro
+      KeyName: fullstack-key
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref ManagedSecurityGroup
+          SubnetId: !Ref ManagedSubnet1
+      Tags:
+        - Key: Name
+          Value: fullstack-managedinstance
+      UserData:
+        'Fn::Base64':
+          !Sub |
+            #!/bin/bash
+            # install update(s)
+            dnf -y update
+
+            # install ansible and ssm
+            dnf install -y ansible https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+
+            # start/enable ssm
+            systemctl enable amazon-ssm-agent
+            systemctl start amazon-ssm-agent
+
+            # reboot
+            systemctl reboot
+
+Outputs:
+  FullStackVPC:
+    Description: VPC
+    Value: !Ref FullstackVPC
+  AZ1:
+    Description: az1
+    Value: !GetAtt 
+      - PublicSubnet1
+      - AvailabilityZone  
+  AZ2:
+    Description: az2
+    Value: !GetAtt 
+      - PublicSubnet2
+      - AvailabilityZone
