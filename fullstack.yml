@@ -403,7 +403,7 @@ Resources:
             dnf install -y python3-pip https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
 
             # ansible via pip3
-            pip3 install --user ansible
+            pip3 install ansible
 
             # start/enable ssm
             systemctl enable amazon-ssm-agent
